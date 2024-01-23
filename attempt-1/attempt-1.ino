@@ -4,8 +4,8 @@
 #include "DFRobot_SHT20.h"
 
 
-char* ssid     = "zoodex";
-char* password = "Zoodex@1234567890";
+char* ssid     = "";
+char* password = "";
 
 DFRobot_SHT20 sht20;
 
