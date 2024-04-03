@@ -3,12 +3,13 @@
 #include "DFRobot_SHT20.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include "WifiConnect.h"
+// #include "WifiConnect.h"
+// #include "server.h"
 
-#include "server.h"
+#include "interfaces.h"
 
-const char* ssid = "zoodex-front";
-const char* password = "sigma-lifters-yohoho";
+// const char* ssid = "zoodex-front";
+// const char* password = "sigma-lifters-yohoho";
 
 // Declaration for SSD1306 display connected using I2C
 #define OLED_RESET     -1 // Reset pin
@@ -24,7 +25,15 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 DFRobot_SHT20 sht20;
 
-MServer mServer;
+// MServer mServer;
+
+Triggers trigers[10];
+
+void initVars(){
+  trigers[0] = {"", 13, "", "air conditioner", 0, 22.0, true, false, 0};
+  trigers[1] = {"", 14, "", "Humidifier", 70.0, 80.0, true, false, 0};
+}
+
 
 void displayTempAndHumidity(float temperature, float humidity){
   display.clearDisplay();
@@ -62,7 +71,7 @@ void setup()
   Serial.begin(115200);
   delay(10);
 
-  connectToWifi(ssid, password);
+  // connectToWifi(ssid, password);
 
 
   sht20.initSHT20();
@@ -78,8 +87,8 @@ void setup()
   display.setTextColor(WHITE);
 
 
-  mServer.setBaseUrl("http://172.16.51.161:8005");
-  mServer.setToken("test1");
+  // mServer.setBaseUrl("http://172.16.51.161:8005");
+  // mServer.setToken("test1");
 
   pinMode(13, OUTPUT);
 
@@ -87,9 +96,11 @@ void setup()
 
 void loop()
 {
-  displayTempAndHumidity(sht20.readTemperature(), sht20.readHumidity());
+  // mServer.sendTempHum(sht20.readTemperature(), sht20.readHumidity());
 
-  mServer.sendTempHum(sht20.readTemperature(), sht20.readHumidity());
+  displayTempAndHumidity(sht20.readTemperature(), sht20.readHumidity());
+  
+
 
   delay(1000);   
 }
