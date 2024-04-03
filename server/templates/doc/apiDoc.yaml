@@ -1,0 +1,46 @@
+swagger: "2.0"
+info:
+  title: go api boilerplate
+  description: go api boilerplate.
+  version: 1.0.0
+host: m3m.dev
+basePath: /api
+schemes:
+  - https
+
+paths:
+  /login.php:
+    post:
+      summary: login or create new user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              example:
+                id: mrm
+                name: pass
+      responses:
+        '200':
+          description: token and hasAccess.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  hasAccess:
+                    type: boolean
+                example:
+                  token: a5c65213e46dd08bfaba2c75ff4eabaf
+                  hasAccess: true
+        '400':
+          description: wrong input.
+        '401':
+          description: wrong password.
