@@ -10,7 +10,7 @@ services:
     depends_on:
       - mongo
     ports:
-      - 8082:80
+      - 8005:8005
     networks:
       - internal
     develop:
