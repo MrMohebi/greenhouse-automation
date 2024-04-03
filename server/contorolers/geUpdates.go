@@ -14,7 +14,7 @@ func GetUpdates() gin.HandlerFunc {
 			Repeats: []models.Repeat{},
 			Triggers: []models.Trigger{
 				{primitive.ObjectID{}, 13, "", "air conditioner", 0, 22.0, true, false, 0},
-				{primitive.ObjectID{}, 14, "", "Humidifier", 70.0, 100.0, true, false, 0},
+				{primitive.ObjectID{}, 14, "", "Humidifier", 70.0, 80.0, true, false, 0},
 			},
 		})
 	}
