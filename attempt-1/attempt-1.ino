@@ -27,11 +27,11 @@ DFRobot_SHT20 sht20;
 
 // MServer mServer;
 
-Triggers trigers[10];
+Triggers triggers[10];
 
 void initVars(){
-  trigers[0] = {"", 13, "", "air conditioner", 0, 22.0, true, false, 0};
-  trigers[1] = {"", 14, "", "Humidifier", 70.0, 80.0, true, false, 0};
+  triggers[0] = {"1", 1, 13, "", "air conditioner", 22.0, 25.0, 0x1, 0x0, 0};
+  triggers[1] = {"2", 2, 14, "", "Humidifier", 70.0, 80.0, 0x1, 0x0, 0};
 }
 
 
@@ -73,7 +73,6 @@ void setup()
 
   // connectToWifi(ssid, password);
 
-
   sht20.initSHT20();
   delay(100);
   sht20.checkSHT20();
@@ -90,16 +89,64 @@ void setup()
   // mServer.setBaseUrl("http://172.16.51.161:8005");
   // mServer.setToken("test1");
 
-  pinMode(13, OUTPUT);
+  initVars();
+  pinMode(16, OUTPUT);
+  digitalWrite(16, 0x1);
 
+  pinMode(13, OUTPUT);
+  pinMode(14, OUTPUT);
 }
 
 void loop()
 {
   // mServer.sendTempHum(sht20.readTemperature(), sht20.readHumidity());
 
-  displayTempAndHumidity(sht20.readTemperature(), sht20.readHumidity());
+  float temperature = sht20.readTemperature();
+  float humidity = sht20.readHumidity();
+
+  displayTempAndHumidity(temperature, humidity);
   
+  for (Triggers trigger : triggers) {
+    if(trigger.name[0] != '\0'){
+      // pinMode(trigger.pinNum, OUTPUT);
+      Serial.println("-------------------------------------------");
+      Serial.print("[TRIGGER] name => ");Serial.println(trigger.name);
+
+      // cooler
+      if(trigger.type == 1){
+        
+        if(temperature < 100 && temperature > -100){
+          Serial.print("[sht20] temp => ");Serial.println(temperature);
+          bool A = temperature > trigger.min;
+          bool B = temperature > trigger.max;
+          bool C = digitalRead(trigger.pinNum) & 1;
+
+          if((A && B) || (A && C)){
+            digitalWrite(trigger.pinNum, trigger.activeState);
+          }else{
+            digitalWrite(trigger.pinNum, trigger.defaultState);
+          }
+        }
+      }
+      // humidifier
+      if(trigger.type == 2){
+        if(humidity < 100 && humidity > 0){
+          Serial.print("[sht20] humidity => ");Serial.println(humidity);
+          bool A = humidity > trigger.min;
+          bool B = humidity > trigger.max;
+          bool C = digitalRead(trigger.pinNum) & 1;
+          
+          if((!B && C) || (!B && !A)){
+            digitalWrite(trigger.pinNum, trigger.activeState);
+          }else{
+            digitalWrite(trigger.pinNum, trigger.defaultState);
+          }
+
+        }
+        
+      }
+    }
+  }
 
 
   delay(1000);   
