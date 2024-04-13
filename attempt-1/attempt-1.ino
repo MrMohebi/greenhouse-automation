@@ -1,12 +1,17 @@
 #include <WiFi.h>
 #include <Wire.h>
-#include "DFRobot_SHT20.h"
+// #include "DFRobot_SHT20.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include "DHT.h"
+// #include <OneWire.h>
+// #include <DallasTemperature.h>
+
 // #include "WifiConnect.h"
 // #include "server.h"
 
 #include "interfaces.h"
+
 
 // const char* ssid = "zoodex-front";
 // const char* password = "sigma-lifters-yohoho";
@@ -20,18 +25,29 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
+
+#define DHTPIN 4
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+// const int oneWireBus = 17; 
+// OneWire oneWire(oneWireBus);
+// DallasTemperature dsSensors(&oneWire);
+
+// DFRobot_SHT20 sht20;
+
+
 #define uint8_t 
 
 
-DFRobot_SHT20 sht20;
 
 // MServer mServer;
 
 Triggers triggers[10];
 
 void initVars(){
-  triggers[0] = {"1", 1, 13, "", "air conditioner", 22.0, 25.0, 0x1, 0x0, 0};
-  triggers[1] = {"2", 2, 14, "", "Humidifier", 70.0, 80.0, 0x1, 0x0, 0};
+  triggers[0] = {"1", 1, 16, "", "air conditioner", 18.0, 20.0, 0x1, 0x0, 0};
+  triggers[1] = {"2", 2, 15, "", "Humidifier", 80.0, 90.0, 0x1, 0x0, 0};
 }
 
 
@@ -68,19 +84,22 @@ void setup()
 {
   Wire.begin();
 
-  Serial.begin(115200);
-  delay(10);
+  Serial.begin(115200);delay(10);
+
 
   // connectToWifi(ssid, password);
 
-  sht20.initSHT20();
-  delay(100);
-  sht20.checkSHT20();
+  // sht20.initSHT20();
+  // delay(100);
+  // sht20.checkSHT20();
+
+  dht.begin();
+
+  // dsSensors.begin();
 
   // initialize the OLED object
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // Don't proceed, loop forever
   }
   display.clearDisplay();
   display.setTextColor(WHITE);
@@ -90,19 +109,17 @@ void setup()
   // mServer.setToken("test1");
 
   initVars();
-  pinMode(16, OUTPUT);
-  digitalWrite(16, 0x1);
 
-  pinMode(13, OUTPUT);
-  pinMode(14, OUTPUT);
+  pinMode(15, OUTPUT);
+  pinMode(16, OUTPUT);
 }
 
 void loop()
 {
   // mServer.sendTempHum(sht20.readTemperature(), sht20.readHumidity());
 
-  float temperature = sht20.readTemperature();
-  float humidity = sht20.readHumidity();
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
 
   displayTempAndHumidity(temperature, humidity);
   
@@ -114,9 +131,8 @@ void loop()
 
       // cooler
       if(trigger.type == 1){
-        
-        if(temperature < 100 && temperature > -100){
-          Serial.print("[sht20] temp => ");Serial.println(temperature);
+        if(!isnan(temperature)){
+          Serial.print("[dht22] temp => ");Serial.println(temperature);
           bool A = temperature > trigger.min;
           bool B = temperature > trigger.max;
           bool C = digitalRead(trigger.pinNum) & 1;
@@ -130,8 +146,8 @@ void loop()
       }
       // humidifier
       if(trigger.type == 2){
-        if(humidity < 100 && humidity > 0){
-          Serial.print("[sht20] humidity => ");Serial.println(humidity);
+        if(!isnan(humidity)){
+          Serial.print("[dht22] humidity => ");Serial.println(humidity);
           bool A = humidity > trigger.min;
           bool B = humidity > trigger.max;
           bool C = digitalRead(trigger.pinNum) & 1;
@@ -149,5 +165,5 @@ void loop()
   }
 
 
-  delay(1000);   
+  delay(2000);   
 }
