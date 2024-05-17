@@ -4,8 +4,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "DHT.h"
-// #include <OneWire.h>
-// #include <DallasTemperature.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 // #include "WifiConnect.h"
 // #include "server.h"
@@ -14,7 +14,7 @@
 
 
 // const char* ssid = "zoodex-front";
-// const char* password = "sigma-lifters-yohoho";
+// const char* password = "-------";
 
 // Declaration for SSD1306 display connected using I2C
 #define OLED_RESET     -1 // Reset pin
@@ -30,9 +30,9 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
 
-// const int oneWireBus = 17; 
-// OneWire oneWire(oneWireBus);
-// DallasTemperature dsSensors(&oneWire);
+const int oneWireBus = 17; 
+OneWire oneWire(oneWireBus);
+DallasTemperature dsSensors(&oneWire);
 
 // DFRobot_SHT20 sht20;
 
@@ -46,8 +46,9 @@ DHT dht(DHTPIN, DHTTYPE);
 Triggers triggers[10];
 
 void initVars(){
-  triggers[0] = {"1", 1, 16, "", "air conditioner", 18.0, 20.0, 0x1, 0x0, 0};
-  triggers[1] = {"2", 2, 15, "", "Humidifier", 80.0, 90.0, 0x1, 0x0, 0};
+  triggers[0] = {"11", 1, 18, "", "outer temp", 18.0, 20.0, 0x1, 0x0, 0};
+  triggers[1] = {"22", 2, 15, "", "Humidifier", 80.0, 90.0, 0x1, 0x0, 0};
+  triggers[2] = {"33", 3, 18, "", "inner temp", 23.0, 25.0, 0x1, 0x0, 0};
 }
 
 
@@ -95,7 +96,7 @@ void setup()
 
   dht.begin();
 
-  // dsSensors.begin();
+  dsSensors.begin();
 
   // initialize the OLED object
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -104,7 +105,6 @@ void setup()
   display.clearDisplay();
   display.setTextColor(WHITE);
 
-
   // mServer.setBaseUrl("http://172.16.51.161:8005");
   // mServer.setToken("test1");
 
@@ -112,16 +112,23 @@ void setup()
 
   pinMode(15, OUTPUT);
   pinMode(16, OUTPUT);
+  pinMode(18, OUTPUT);
+
 }
 
 void loop()
 {
   // mServer.sendTempHum(sht20.readTemperature(), sht20.readHumidity());
 
-  float temperature = dht.readTemperature();
+  dsSensors.requestTemperatures();
+
+  float temperatureInner = dsSensors.getTempCByIndex(0);
+  float temperatureOuter = dht.readTemperature();
+
+
   float humidity = dht.readHumidity();
 
-  displayTempAndHumidity(temperature, humidity);
+  displayTempAndHumidity(temperatureOuter, humidity);
   
   for (Triggers trigger : triggers) {
     if(trigger.name[0] != '\0'){
@@ -129,24 +136,43 @@ void loop()
       Serial.println("-------------------------------------------");
       Serial.print("[TRIGGER] name => ");Serial.println(trigger.name);
 
-      // cooler
+      // cooler outer temp
       if(trigger.type == 1){
-        if(!isnan(temperature)){
-          Serial.print("[dht22] temp => ");Serial.println(temperature);
-          bool A = temperature > trigger.min;
-          bool B = temperature > trigger.max;
+        if(!isnan(temperatureOuter)  && temperatureOuter > 0 && temperatureOuter  < 110){
+          Serial.print("[dht22] temp outer => ");Serial.println(temperatureOuter);
+          bool A = temperatureOuter > trigger.min;
+          bool B = temperatureOuter > trigger.max;
           bool C = digitalRead(trigger.pinNum) & 1;
 
-          if((A && B) || (A && C)){
+          if((A && B) || (A && C) || B){
             digitalWrite(trigger.pinNum, trigger.activeState);
+            Serial.println("[dht22] temp outer => active air conditioner");
           }else{
             digitalWrite(trigger.pinNum, trigger.defaultState);
           }
         }
       }
+
+      // cooler inner temp
+      if(trigger.type == 3){
+        if(!isnan(temperatureInner)  && temperatureInner > 0 && temperatureInner  < 110){
+          Serial.print("[ds18b20] temp inner => ");Serial.println(temperatureInner);
+          bool A = temperatureInner > trigger.min;
+          bool B = temperatureInner > trigger.max;
+          bool C = digitalRead(trigger.pinNum) & 1;
+
+          if((A && B) || (A && C) || B){
+            digitalWrite(trigger.pinNum, trigger.activeState);
+            Serial.println("[ds18b20] temp inner => active air conditioner");
+          }else{
+            digitalWrite(trigger.pinNum, trigger.defaultState);
+          }
+        }
+      }
+
       // humidifier
       if(trigger.type == 2){
-        if(!isnan(humidity)){
+        if(!isnan(humidity) && humidity > 0 && humidity  < 110){
           Serial.print("[dht22] humidity => ");Serial.println(humidity);
           bool A = humidity > trigger.min;
           bool B = humidity > trigger.max;
@@ -154,6 +180,7 @@ void loop()
           
           if((!B && C) || (!B && !A)){
             digitalWrite(trigger.pinNum, trigger.activeState);
+            Serial.println("[dht22] humidity => active Humidifier");
           }else{
             digitalWrite(trigger.pinNum, trigger.defaultState);
           }
