@@ -37,8 +37,14 @@ DallasTemperature dsSensors(&oneWire);
 // DFRobot_SHT20 sht20;
 
 
-#define uint8_t 
+#define uint8_t;
 
+
+#define PIN_AIRCONDITIONER_ABI 14
+#define PIN_AIRCONDITIONER_GAZI 27
+#define PIN_HUMIDIFIER_DISKY 26
+#define PIN_HUMIDIFIER_PUMPY 25
+#define PIN_WATER_PUMP 33
 
 
 // MServer mServer;
@@ -46,39 +52,14 @@ DallasTemperature dsSensors(&oneWire);
 Triggers triggers[10];
 
 void initVars(){
-  triggers[0] = {"11", 1, 18, "", "outer temp", 18.0, 20.0, 0x1, 0x0, 0};
-  triggers[1] = {"22", 2, 15, "", "Humidifier", 80.0, 90.0, 0x1, 0x0, 0};
-  triggers[2] = {"33", 3, 18, "", "inner temp", 23.0, 25.0, 0x1, 0x0, 0};
+  triggers[0] = {"11", 1, 12, "", "outer temp", 20.0, 22.0, 0x0, 0x1, 0};
+  triggers[1] = {"22", 2, 26, "", "Humidifier", 65.0, 75.0, 0x0, 0x1, 0};
+  // triggers[2] = {"33", 3, 18, "", "inner temp", 23.0, 25.0, 0x1, 0x0, 0};
 }
 
 
-void displayTempAndHumidity(float temperature, float humidity){
-  display.clearDisplay();
-  // display temperature
-  display.setTextSize(1);
-  display.setCursor(0,0);
-  display.print("Temperature: ");
-  display.setTextSize(2);
-  display.setCursor(0,10);
-  display.print(String(temperature));
-  display.print(" ");
-  display.setTextSize(1);
-  display.cp437(true);
-  display.write(167);
-  display.setTextSize(2);
-  display.print("C");
-  
-  // display humidity
-  display.setTextSize(1);
-  display.setCursor(0, 35);
-  display.print("Humidity: ");
-  display.setTextSize(2);
-  display.setCursor(0, 45);
-  display.print(String(humidity));
-  display.print(" %"); 
-  
-  display.display();
-}
+void displayTempAndHumidity(float temperature, float humidity);
+
 
 
 void setup()
@@ -110,10 +91,19 @@ void setup()
 
   initVars();
 
-  pinMode(15, OUTPUT);
-  pinMode(16, OUTPUT);
-  pinMode(18, OUTPUT);
+  pinMode(PIN_AIRCONDITIONER_ABI, OUTPUT);
+  pinMode(PIN_AIRCONDITIONER_GAZI, OUTPUT);
+  pinMode(PIN_HUMIDIFIER_DISKY, OUTPUT);
+  pinMode(PIN_HUMIDIFIER_PUMPY, OUTPUT);
+  pinMode(PIN_WATER_PUMP, OUTPUT);
 
+  digitalWrite(PIN_AIRCONDITIONER_ABI, triggers[0].defaultState);
+  digitalWrite(PIN_AIRCONDITIONER_GAZI, triggers[0].defaultState);
+  digitalWrite(PIN_HUMIDIFIER_DISKY, triggers[0].defaultState);
+  digitalWrite(PIN_HUMIDIFIER_PUMPY, triggers[0].defaultState);
+  digitalWrite(PIN_WATER_PUMP, triggers[0].defaultState);
+  
+  
 }
 
 void loop()
@@ -142,33 +132,33 @@ void loop()
           Serial.print("[dht22] temp outer => ");Serial.println(temperatureOuter);
           bool A = temperatureOuter > trigger.min;
           bool B = temperatureOuter > trigger.max;
-          bool C = digitalRead(trigger.pinNum) & 1;
+          bool C = digitalRead(PIN_AIRCONDITIONER_ABI) == trigger.activeState;
 
           if((A && B) || (A && C) || B){
-            digitalWrite(trigger.pinNum, trigger.activeState);
+            digitalWrite(PIN_AIRCONDITIONER_ABI, trigger.activeState);
             Serial.println("[dht22] temp outer => active air conditioner");
           }else{
-            digitalWrite(trigger.pinNum, trigger.defaultState);
+            digitalWrite(PIN_AIRCONDITIONER_ABI, trigger.defaultState);
           }
         }
       }
 
       // cooler inner temp
-      if(trigger.type == 3){
-        if(!isnan(temperatureInner)  && temperatureInner > 0 && temperatureInner  < 110){
-          Serial.print("[ds18b20] temp inner => ");Serial.println(temperatureInner);
-          bool A = temperatureInner > trigger.min;
-          bool B = temperatureInner > trigger.max;
-          bool C = digitalRead(trigger.pinNum) & 1;
+      // if(trigger.type == 3){
+      //   if(!isnan(temperatureInner)  && temperatureInner > 0 && temperatureInner  < 110){
+      //     Serial.print("[ds18b20] temp inner => ");Serial.println(temperatureInner);
+      //     bool A = temperatureInner > trigger.min;
+      //     bool B = temperatureInner > trigger.max;
+      //     bool C = digitalRead(trigger.pinNum) & 1;
 
-          if((A && B) || (A && C) || B){
-            digitalWrite(trigger.pinNum, trigger.activeState);
-            Serial.println("[ds18b20] temp inner => active air conditioner");
-          }else{
-            digitalWrite(trigger.pinNum, trigger.defaultState);
-          }
-        }
-      }
+      //     if((A && B) || (A && C) || B){
+      //       digitalWrite(trigger.pinNum, trigger.activeState);
+      //       Serial.println("[ds18b20] temp inner => active air conditioner");
+      //     }else{
+      //       digitalWrite(trigger.pinNum, trigger.defaultState);
+      //     }
+      //   }
+      // }
 
       // humidifier
       if(trigger.type == 2){
@@ -176,13 +166,15 @@ void loop()
           Serial.print("[dht22] humidity => ");Serial.println(humidity);
           bool A = humidity > trigger.min;
           bool B = humidity > trigger.max;
-          bool C = digitalRead(trigger.pinNum) & 1;
+          bool C = digitalRead(PIN_HUMIDIFIER_PUMPY) == trigger.activeState;
           
           if((!B && C) || (!B && !A)){
-            digitalWrite(trigger.pinNum, trigger.activeState);
+            digitalWrite(PIN_HUMIDIFIER_DISKY, trigger.activeState);
+            digitalWrite(PIN_HUMIDIFIER_PUMPY, trigger.activeState);
             Serial.println("[dht22] humidity => active Humidifier");
           }else{
-            digitalWrite(trigger.pinNum, trigger.defaultState);
+            digitalWrite(PIN_HUMIDIFIER_DISKY, trigger.defaultState);
+            digitalWrite(PIN_HUMIDIFIER_PUMPY, trigger.defaultState);
           }
 
         }
@@ -194,3 +186,33 @@ void loop()
 
   delay(2000);   
 }
+
+
+void displayTempAndHumidity(float temperature, float humidity){
+  display.clearDisplay();
+  // display temperature
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  display.print("Temperature: ");
+  display.setTextSize(2);
+  display.setCursor(0,10);
+  display.print(String(temperature));
+  display.print(" ");
+  display.setTextSize(1);
+  display.cp437(true);
+  display.write(167);
+  display.setTextSize(2);
+  display.print("C");
+  
+  // display humidity
+  display.setTextSize(1);
+  display.setCursor(0, 35);
+  display.print("Humidity: ");
+  display.setTextSize(2);
+  display.setCursor(0, 45);
+  display.print(String(humidity));
+  display.print(" %"); 
+  
+  display.display();
+}
+
